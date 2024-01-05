@@ -4,17 +4,16 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  OnInit,
   ViewChild,
   WritableSignal,
   inject,
-  signal,
+  signal
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { catchError, debounceTime, map, of } from 'rxjs';
+import { debounceTime, filter, map } from 'rxjs';
 import { NodeSvg } from './models/node.svg.model';
-import { PathSvg } from './models/path.svg.model';
 import { Nullable } from './models/nullable.model';
+import { PathSvg } from './models/path.svg.model';
 import { TreeNode } from './models/tree-node.model';
 
 @Component({
@@ -23,7 +22,7 @@ import { TreeNode } from './models/tree-node.model';
   styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements AfterViewInit {
   readonly document = inject(DOCUMENT);
 
   arrAsString = new FormControl('[1,2,null,4,5,6,7]');
@@ -33,7 +32,8 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   @ViewChild('svg') svg!: ElementRef<SVGElement>;
 
-  ngOnInit(): void {
+  ngAfterViewInit(): void {
+    this.initRootAndDrawTree(JSON.parse(this.arrAsString.value || '[]'));
     this.arrAsString.addValidators((control) => {
       try {
         JSON.parse(control.value || '[]');
@@ -46,8 +46,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.arrAsString.valueChanges
       .pipe(
         debounceTime(400),
+        filter(() => this.arrAsString.valid),
         map((it) => JSON.parse(it || '[]')),
-        catchError(() => of([]))
       )
       .subscribe({
         next: (value) => {
@@ -58,12 +58,8 @@ export class AppComponent implements OnInit, AfterViewInit {
           }
 
           this.initRootAndDrawTree(value);
-        },
+        }
       });
-  }
-
-  ngAfterViewInit(): void {
-    this.initRootAndDrawTree(JSON.parse(this.arrAsString.value || '[]'));
   }
 
   onCoorChanged({ x, y }: { x: number; y: number }, node: NodeSvg): void {
