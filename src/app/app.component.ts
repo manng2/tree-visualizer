@@ -36,7 +36,12 @@ export class AppComponent implements AfterViewInit {
     this.initRootAndDrawTree(JSON.parse(this.arrAsString.value || '[]'));
     this.arrAsString.addValidators((control) => {
       try {
-        JSON.parse(control.value || '[]');
+        let value = control.value;
+        if (value[0] !== '[' && value[value.length - 1] !== ']') {
+          value = `[${value}]`
+        }
+
+        JSON.parse(value || '[]');
         return null;
       } catch (e) {
         return { invalidJson: true };
@@ -47,7 +52,18 @@ export class AppComponent implements AfterViewInit {
       .pipe(
         debounceTime(400),
         filter(() => this.arrAsString.valid),
-        map((it) => JSON.parse(it || '[]')),
+        map((it) => {
+          if (!it) {
+            return '[]'
+          }
+
+          if (it[0] !== '[' && it[it.length - 1] !== ']') {
+            return `[${it}]`
+          }
+
+          return it;
+        }),
+        map((it) => JSON.parse(it)),
       )
       .subscribe({
         next: (value) => {

@@ -1,6 +1,28 @@
 .container {
   height: 80vh;
 
+  .array-input {
+    width: 100%;
+    text-align: center;
+    padding: 0 16px;
+
+    &.error {
+      input {
+        border-color: rgba(221, 2, 2, 0.901);
+        outline: rgba(221, 2, 2, 0.901);
+      }
+    }
+
+    input {
+      width: 250px;
+      height: 40px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 0 10px;
+      font-size: 16px;
+    }
+  }
+
   svg {
     width: 100%;
     height: 100%;

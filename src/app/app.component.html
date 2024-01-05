@@ -1,15 +1,19 @@
 <div class="container">
-  <input [formControl]="arrAsString"/>
-  @if (arrAsString.invalid) {
-    <span>Invalid</span>
-  }
+  <div class="array-input" [class.error]="arrAsString.invalid">
+    <input [formControl]="arrAsString" />
+  </div>
+
   <svg #svg>
     @for (path of pathsSvg(); track $index) {
-      <g path [x1]="path.x1" [y1]="path.y1" [x2]="path.x2" [y2]="path.y2"></g>
-    }
-
-    @for (node of nodesSvg(); track $index) {
-      <g node [val]="node.val" [x]="node.x" [y]="node.y" (coorChanged)="onCoorChanged($event, node)"></g>
+    <g path [x1]="path.x1" [y1]="path.y1" [x2]="path.x2" [y2]="path.y2"></g>
+    } @for (node of nodesSvg(); track $index) {
+    <g
+      node
+      [val]="node.val"
+      [x]="node.x"
+      [y]="node.y"
+      (coorChanged)="onCoorChanged($event, node)"
+    ></g>
     }
   </svg>
 </div>
