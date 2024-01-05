@@ -1,0 +1,3 @@
+<svg>
+    <path class="link" [attr.d]="line"></path>
+</svg>

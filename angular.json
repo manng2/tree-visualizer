@@ -7,7 +7,8 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "style": "scss"
+          "style": "scss",
+          "changeDetection": "OnPush"
         }
       },
       "root": "",
@@ -65,10 +66,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "tree-visualizer:build:production"
+              "buildTarget": "tree-visualizer:build:production"
             },
             "development": {
-              "browserTarget": "tree-visualizer:build:development"
+              "buildTarget": "tree-visualizer:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -76,7 +77,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "tree-visualizer:build"
+            "buildTarget": "tree-visualizer:build"
           }
         },
         "test": {
