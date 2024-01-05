@@ -3,4 +3,8 @@
   fill: #777;
   stroke: #000;
   stroke-width: 1;
+
+  &.selected {
+    stroke: red;
+  }
 }

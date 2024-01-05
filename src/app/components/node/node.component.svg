@@ -1,5 +1,5 @@
 <svg>
-  <g class="node" [attr.transform]="translateXY">
+  <g class="node" [class.selected]="isSelected" [attr.transform]="translateXY()">
     <circle r="20" fill="#FFFFFF"></circle>
     <g><text class="nodeNameBase" text-anchor="middle" x="0" y="0" dy=".35em">{{val}}</text><text
         class="nodeAttributesBase" y="10" text-anchor="middle"></text></g>

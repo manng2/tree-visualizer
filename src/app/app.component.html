@@ -9,7 +9,7 @@
     }
 
     @for (node of nodesSvg(); track $index) {
-      <g node [val]="node.val" [x]="node.x" [y]="node.y"></g>
+      <g node [val]="node.val" [x]="node.x" [y]="node.y" (coorChanged)="onCoorChanged($event, node)"></g>
     }
   </svg>
 </div>

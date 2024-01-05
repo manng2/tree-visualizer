@@ -66,6 +66,35 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.initRootAndDrawTree(JSON.parse(this.arrAsString.value || '[]'));
   }
 
+  onCoorChanged({ x, y }: { x: number; y: number }, node: NodeSvg): void {
+    const nodeIdx = this.nodesSvg().findIndex(
+      (it) => it.x === node.x && it.y === node.y
+    );
+
+    this.nodesSvg.update((v) => {
+      v[nodeIdx] = { ...v[nodeIdx], x, y };
+      return v;
+    });
+
+    this.pathsSvg().forEach((path, idx) => {
+      if (path.x1 === node.x && path.y1 === node.y) {
+        this.pathsSvg.update((v) => {
+          v[idx] = { ...v[idx], x1: x, y1: y };
+          return v;
+        });
+      }
+    });
+
+    this.pathsSvg().forEach((path, idx) => {
+      if (path.x2 === node.x && path.y2 === node.y) {
+        this.pathsSvg.update((v) => {
+          v[idx] = { ...v[idx], x2: x, y2: y };
+          return v;
+        });
+      }
+    });
+  }
+
   private convertToTree(arr: Nullable<number>[]): TreeNode {
     const root: TreeNode = {
       val: arr[0]!,
