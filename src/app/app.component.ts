@@ -8,33 +8,14 @@ import {
   ViewChild,
   WritableSignal,
   inject,
-  signal
+  signal,
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { catchError, debounceTime, map, of } from 'rxjs';
-
-type Nullable<T> = T | null;
-
-interface TreeNode {
-  val: number;
-  left: Nullable<TreeNode>;
-  right: Nullable<TreeNode>;
-  x: number;
-  y: number;
-}
-
-interface PathSvg {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
-
-interface NodeSvg {
-  val: number;
-  x: number;
-  y: number;
-}
+import { NodeSvg } from './models/node.svg.model';
+import { PathSvg } from './models/path.svg.model';
+import { Nullable } from './models/nullable.model';
+import { TreeNode } from './models/tree-node.model';
 
 @Component({
   selector: 'app-root',
@@ -45,7 +26,7 @@ interface NodeSvg {
 export class AppComponent implements OnInit, AfterViewInit {
   readonly document = inject(DOCUMENT);
 
-  arrAsString = new FormControl('[1,null,2,null,4,5,6,7]');
+  arrAsString = new FormControl('[1,2,null,4,5,6,7]');
   root: Nullable<TreeNode> = null;
   pathsSvg: WritableSignal<PathSvg[]> = signal([]);
   nodesSvg: WritableSignal<NodeSvg[]> = signal([]);
@@ -71,7 +52,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       .subscribe({
         next: (value) => {
           this.clearSvgData();
-          console.log(value);
 
           if (!value.length) {
             return;
@@ -91,14 +71,15 @@ export class AppComponent implements OnInit, AfterViewInit {
       val: arr[0]!,
       left: null,
       right: null,
-      x: this.document.body.clientWidth / 2,
+      x: this.svg.nativeElement.clientWidth / 2,
       y: 100,
+      level: 1,
     };
 
     let lastCheckedIdx = 0;
     const arrNodes: TreeNode[] = [];
     let current: TreeNode = root;
-    let step = 60;
+    let totalLevel = 1;
 
     arr.forEach(() => {
       const leftVal = arr[lastCheckedIdx + 1];
@@ -109,8 +90,9 @@ export class AppComponent implements OnInit, AfterViewInit {
           val: leftVal,
           left: null,
           right: null,
-          x: current.x - 200 + step,
-          y: current.y + 50,
+          x: current.x - 100 / current.level,
+          y: current.y + 100,
+          level: current.level + 1,
         };
 
         current.left = left;
@@ -122,8 +104,9 @@ export class AppComponent implements OnInit, AfterViewInit {
           val: rightVal,
           left: null,
           right: null,
-          x: current.x + 200 - step,
-          y: current.y + 50,
+          x: current.x + 100 / current.level,
+          y: current.y + 100,
+          level: current.level + 1,
         };
 
         current.right = right;
@@ -132,10 +115,8 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       lastCheckedIdx += 2;
 
-      if (arrNodes.length % 2 !== 0) {
-        step += 5;
-      }
       current = arrNodes.shift() as TreeNode;
+      totalLevel = current ? current.level : totalLevel;
     });
 
     return root;
