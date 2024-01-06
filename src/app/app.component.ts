@@ -4,10 +4,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  OnInit,
   ViewChild,
   WritableSignal,
   inject,
-  signal
+  signal,
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { debounceTime, filter, map } from 'rxjs';
@@ -22,23 +23,23 @@ import { TreeNode } from './models/tree-node.model';
   styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent implements AfterViewInit {
+export class AppComponent implements OnInit {
   readonly document = inject(DOCUMENT);
+  readonly DEFAULT_VALUE = '1,2,3,null,5,6,7';
 
-  arrAsString = new FormControl('[1,2,null,4,5,6,7]');
+  arrAsString = new FormControl('');
   root: Nullable<TreeNode> = null;
   pathsSvg: WritableSignal<PathSvg[]> = signal([]);
   nodesSvg: WritableSignal<NodeSvg[]> = signal([]);
 
   @ViewChild('svg') svg!: ElementRef<SVGElement>;
 
-  ngAfterViewInit(): void {
-    this.initRootAndDrawTree(JSON.parse(this.arrAsString.value || '[]'));
+  ngOnInit(): void {
     this.arrAsString.addValidators((control) => {
       try {
         let value = control.value;
         if (value[0] !== '[' && value[value.length - 1] !== ']') {
-          value = `[${value}]`
+          value = `[${value}]`;
         }
 
         JSON.parse(value || '[]');
@@ -54,16 +55,16 @@ export class AppComponent implements AfterViewInit {
         filter(() => this.arrAsString.valid),
         map((it) => {
           if (!it) {
-            return '[]'
+            return '[]';
           }
 
           if (it[0] !== '[' && it[it.length - 1] !== ']') {
-            return `[${it}]`
+            return `[${it}]`;
           }
 
           return it;
         }),
-        map((it) => JSON.parse(it)),
+        map((it) => JSON.parse(it))
       )
       .subscribe({
         next: (value) => {
@@ -74,8 +75,10 @@ export class AppComponent implements AfterViewInit {
           }
 
           this.initRootAndDrawTree(value);
-        }
+        },
       });
+
+    this.arrAsString.setValue(this.DEFAULT_VALUE);
   }
 
   onCoorChanged({ x, y }: { x: number; y: number }, node: NodeSvg): void {
@@ -120,7 +123,6 @@ export class AppComponent implements AfterViewInit {
     let lastCheckedIdx = 0;
     const arrNodes: TreeNode[] = [];
     let current: TreeNode = root;
-    let totalLevel = 1;
 
     arr.forEach(() => {
       const leftVal = arr[lastCheckedIdx + 1];
@@ -157,7 +159,6 @@ export class AppComponent implements AfterViewInit {
       lastCheckedIdx += 2;
 
       current = arrNodes.shift() as TreeNode;
-      totalLevel = current ? current.level : totalLevel;
     });
 
     return root;
