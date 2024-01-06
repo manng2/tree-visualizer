@@ -25,7 +25,7 @@ import { TreeNode } from './models/tree-node.model';
 })
 export class AppComponent implements OnInit, AfterViewInit {
   readonly document = inject(DOCUMENT);
-  readonly DEFAULT_VALUE = '1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2';
+  readonly DEFAULT_VALUE = '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15';
   readonly BASE_HORIZONTAL_DISTANCE_TO_ROOT = 150;
 
   arrAsString = new FormControl('');
@@ -145,7 +145,7 @@ export class AppComponent implements OnInit, AfterViewInit {
           val: leftVal,
           left: null,
           right: null,
-          x: current.x - baseDistance / current.level,
+          x: 0,
           y: current.y + 100 - current.level * 5,
           level: current.level + 1,
         };
@@ -159,7 +159,7 @@ export class AppComponent implements OnInit, AfterViewInit {
           val: rightVal,
           left: null,
           right: null,
-          x: current.x + baseDistance / current.level,
+          x: 0,
           y: current.y + 100 - current.level * 5,
           level: current.level + 1,
         };
@@ -207,7 +207,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.drawTree(node.right, lastSvgNode, false);
   }
 
-  private checkOverlappingAndExtend(arr: Nullable<number>[], baseDistance = this.BASE_HORIZONTAL_DISTANCE_TO_ROOT): void {
+  private checkOverlappingAndExtend(
+    arr: Nullable<number>[],
+    baseDistance = this.BASE_HORIZONTAL_DISTANCE_TO_ROOT
+  ): void {
     const queue: TreeNode[] = [this.root!];
     const bfsNodes: TreeNode[] = [];
 
@@ -248,14 +251,17 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     if (isOverlapped) {
       // this.root = this.convertToTree(arr, baseDistance + 50);
-      this.extendDistanceBetweenNodes(overlappedLevel - 1, 30);
+      // this.extendDistanceBetweenNodes(overlappedLevel - 1, 30);
       // this.checkOverlappingAndExtend(arr, baseDistance + 50);
     }
 
     console.log(bfsNodes);
   }
 
-  private extendDistanceBetweenNodes(toLevel: number, baseDistance: number): void {
+  private extendDistanceBetweenNodes(
+    toLevel: number,
+    baseDistance: number
+  ): void {
     const dfs = (node: Nullable<TreeNode>, isFromLeft: boolean) => {
       if (!node || node.level >= toLevel) {
         return;
@@ -273,12 +279,59 @@ export class AppComponent implements OnInit, AfterViewInit {
     dfs(this.root, true);
   }
 
+  private setNodesCoordinates(): void {
+    const queue: Nullable<TreeNode>[] = [this.root!];
+    const bfsNodes: TreeNode[][] = [];
+
+    while (queue.length) {
+      const node = queue.shift()!;
+      if (!node) {
+        continue;
+      }
+      const left = node.left;
+      const right = node.right;
+
+      if (bfsNodes[node.level]) {
+        bfsNodes[node.level].push(node);
+      } else {
+        bfsNodes[node.level] = [node];
+      }
+      queue.push(left);
+      queue.push(right);
+    }
+
+    bfsNodes[bfsNodes.length - 1].forEach((it, idx) => {
+      it.x = 100 + idx * 80;
+    })
+
+    const dfs = (node: Nullable<TreeNode>) => {
+      if (!node) {
+        return;
+      }
+
+      dfs(node.left);
+      dfs(node.right);
+
+      if (node.left && node.right) {
+        node.x = (node.left.x + node.right.x) / 2;
+      } else if (node.left) {
+        node.x = node.left.x + 40;
+      } else if (node.right) {
+        node.x = node.right.x - 40;
+      }
+      console.log(node.val, node.x);
+    };
+
+    dfs(this.root);
+  }
+
   private initRootAndDrawTree(arr: Nullable<number>[]): void {
     this.root = this.convertToTree(arr);
     if (!this.root) {
       return;
     }
-    this.checkOverlappingAndExtend(arr, this.BASE_HORIZONTAL_DISTANCE_TO_ROOT);
+    this.setNodesCoordinates();
+    // this.checkOverlappingAndExtend(arr, this.BASE_HORIZONTAL_DISTANCE_TO_ROOT);
     this.drawTree(this.root, null, true);
   }
 
