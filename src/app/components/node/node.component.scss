@@ -9,5 +9,9 @@ svg {
     &.selected {
       stroke: red;
     }
+
+    &.empty {
+      display: none;
+    }
   }
 }

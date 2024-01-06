@@ -9,6 +9,7 @@ import {
   computed,
   signal
 } from '@angular/core';
+import { Nullable } from 'src/app/models/nullable.model';
 
 @Component({
   selector: '[node]',
@@ -19,21 +20,6 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NodeComponent {
-  // @HostListener('click')
-  // onClick(): void {
-  //   this.isSelected = !this.isSelected;
-  // }
-
-  // @HostListener('mousemove', ['$event'])
-  // onMouseMove(e: MouseEvent): void {
-  //   if (!this.isSelected) {
-  //     return;
-  //   }
-  //   this.coorX.set(e.offsetX);
-  //   this.coorY.set(e.offsetY);
-  //   this.coorChanged.emit({ x: this.coorX(), y: this.coorY() });
-  // }
-
   isSelected = false;
   coorX = signal(0);
   coorY = signal(0);
@@ -41,7 +27,7 @@ export class NodeComponent {
     return `translate(${this.coorX()}, ${this.coorY()})`;
   });
 
-  @Input({ required: true }) val!: number;
+  @Input({ required: true }) val!: Nullable<number>;
   @Input({ required: true }) set x(value: number) {
     this.coorX.set(value);
   }

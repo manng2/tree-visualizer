@@ -25,11 +25,11 @@ import { TreeNode } from './models/tree-node.model';
 })
 export class AppComponent implements OnInit, AfterViewInit {
   readonly document = inject(DOCUMENT);
-  readonly DEFAULT_VALUE = '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15';
+  readonly DEFAULT_VALUE = '1,2,3,4,5,6';
   readonly BASE_HORIZONTAL_DISTANCE_TO_ROOT = 150;
 
   arrAsString = new FormControl('');
-  root: Nullable<TreeNode> = null;
+  root!: TreeNode;
   pathsSvg: WritableSignal<PathSvg[]> = signal([]);
   nodesSvg: WritableSignal<NodeSvg[]> = signal([]);
   panZoom: any;
@@ -120,7 +120,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   private convertToTree(
     arr: Nullable<number>[],
-    baseDistance = this.BASE_HORIZONTAL_DISTANCE_TO_ROOT
   ): TreeNode {
     const root: TreeNode = {
       val: arr[0]!,
@@ -140,33 +139,29 @@ export class AppComponent implements OnInit, AfterViewInit {
       const leftVal = arr[lastCheckedIdx + 1];
       const rightVal = arr[lastCheckedIdx + 2];
 
-      if (leftVal) {
-        const left = {
-          val: leftVal,
-          left: null,
-          right: null,
-          x: 0,
-          y: current.y + 100 - current.level * 5,
-          level: current.level + 1,
-        };
+      const left = {
+        val: leftVal,
+        left: null,
+        right: null,
+        x: 0,
+        y: current.y + 100 - current.level * 5,
+        level: current.level + 1,
+      };
 
-        current.left = left;
-        arrNodes.push(left);
-      }
+      current.left = left;
+      arrNodes.push(left);
 
-      if (rightVal) {
-        const right = {
-          val: rightVal,
-          left: null,
-          right: null,
-          x: 0,
-          y: current.y + 100 - current.level * 5,
-          level: current.level + 1,
-        };
+      const right = {
+        val: rightVal,
+        left: null,
+        right: null,
+        x: 0,
+        y: current.y + 100 - current.level * 5,
+        level: current.level + 1,
+      };
 
-        current.right = right;
-        arrNodes.push(right);
-      }
+      current.right = right;
+      arrNodes.push(right);
 
       lastCheckedIdx += 2;
 
@@ -178,105 +173,24 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   private drawTree(
-    node: Nullable<TreeNode>,
+    node: TreeNode,
     prevSvgNode: Nullable<NodeSvg>,
-    isFromLeft: boolean
   ): void {
     if (!node) {
       return;
     }
+    this.nodesSvg.update((v) => [...v, { val: node.val, x: node.x, y: node.y }]);
 
-    const baseDistance = (this.totalLevels - node.level + 1) * 0;
-
-    const x = !prevSvgNode
-      ? node.x
-      : node.x - (isFromLeft ? baseDistance : -baseDistance);
-    const y = node.y;
-
-    this.nodesSvg.update((v) => [...v, { val: node.val, x, y }]);
-
-    if (node && prevSvgNode) {
+    if (node && prevSvgNode && node.val) {
       this.pathsSvg.update((v) => [
         ...v,
-        { x1: x, y1: y, x2: prevSvgNode.x, y2: prevSvgNode.y },
+        { x1: node.x, y1: node.y, x2: prevSvgNode.x, y2: prevSvgNode.y },
       ]);
     }
 
     const lastSvgNode = this.nodesSvg()[this.nodesSvg().length - 1];
-    this.drawTree(node.left, lastSvgNode, true);
-    this.drawTree(node.right, lastSvgNode, false);
-  }
-
-  private checkOverlappingAndExtend(
-    arr: Nullable<number>[],
-    baseDistance = this.BASE_HORIZONTAL_DISTANCE_TO_ROOT
-  ): void {
-    const queue: TreeNode[] = [this.root!];
-    const bfsNodes: TreeNode[] = [];
-
-    while (queue.length) {
-      const node = queue.shift()!;
-      bfsNodes.push(node);
-      const left = node.left;
-      const right = node.right;
-
-      if (left) {
-        queue.push(left);
-      }
-
-      if (right) {
-        queue.push(right);
-      }
-    }
-
-    let isOverlapped = false;
-    let overlappedLevel = 0;
-
-    for (let i = 0; i < bfsNodes.length - 1; i++) {
-      if (bfsNodes[i].level !== bfsNodes[i + 1].level) {
-        continue;
-      }
-
-      if (bfsNodes[i].x + 20 > bfsNodes[i + 1].x - 20) {
-        isOverlapped = true;
-        overlappedLevel = bfsNodes[i].level;
-        console.log('overlapped', bfsNodes[i].x, bfsNodes[i + 1].x);
-        break;
-      }
-
-      if (i === bfsNodes.length - 2) {
-        isOverlapped = false;
-      }
-    }
-
-    if (isOverlapped) {
-      // this.root = this.convertToTree(arr, baseDistance + 50);
-      // this.extendDistanceBetweenNodes(overlappedLevel - 1, 30);
-      // this.checkOverlappingAndExtend(arr, baseDistance + 50);
-    }
-
-    console.log(bfsNodes);
-  }
-
-  private extendDistanceBetweenNodes(
-    toLevel: number,
-    baseDistance: number
-  ): void {
-    const dfs = (node: Nullable<TreeNode>, isFromLeft: boolean) => {
-      if (!node || node.level >= toLevel) {
-        return;
-      }
-
-      if (node !== this.root) {
-        console.log(node.val, node.x);
-        node.x = isFromLeft ? node.x - baseDistance : node.x + baseDistance;
-      }
-
-      dfs(node.left, true);
-      dfs(node.right, false);
-    };
-
-    dfs(this.root, true);
+    this.drawTree(node.left!, lastSvgNode);
+    this.drawTree(node.right!, lastSvgNode);
   }
 
   private setNodesCoordinates(): void {
@@ -301,8 +215,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
 
     bfsNodes[bfsNodes.length - 1].forEach((it, idx) => {
-      it.x = 100 + idx * 80;
-    })
+      it.x = 100 + idx * 40;
+    });
 
     const dfs = (node: Nullable<TreeNode>) => {
       if (!node) {
@@ -319,20 +233,74 @@ export class AppComponent implements OnInit, AfterViewInit {
       } else if (node.right) {
         node.x = node.right.x - 40;
       }
-      console.log(node.val, node.x);
     };
 
     dfs(this.root);
   }
 
+  private createEmptyNodes(node: TreeNode): void {
+    if (node.level > this.totalLevels) {
+      return;
+    }
+
+    if (!node.left) {
+      node.left = {
+        val: null,
+        left: null,
+        right: null,
+        x: 0,
+        y: 0,
+        level: node.level + 1,
+      };
+    }
+
+    if (!node.right) {
+      node.right = {
+        val: null,
+        left: null,
+        right: null,
+        x: 0,
+        y: 0,
+        level: node.level + 1,
+      };
+    }
+
+    this.createEmptyNodes(node.left);
+    this.createEmptyNodes(node.right)
+  }
+
+  private moveTreeToMiddle(): void {
+    const root = this.root;
+    if (!root) {
+      return;
+    }
+    const svgWidth = this.svg.nativeElement.clientWidth;
+    const rootX = root.x;
+    const svgCenterX = svgWidth / 2;
+
+    const diff = svgCenterX - rootX;
+    const queue: Nullable<TreeNode>[] = [root];
+
+    while (queue.length) {
+      const node = queue.shift()!;
+      if (!node) {
+        continue;
+      }
+      node.x += diff;
+      queue.push(node.left);
+      queue.push(node.right);
+    }
+  }
+
   private initRootAndDrawTree(arr: Nullable<number>[]): void {
     this.root = this.convertToTree(arr);
+    this.createEmptyNodes(this.root);
     if (!this.root) {
       return;
     }
     this.setNodesCoordinates();
-    // this.checkOverlappingAndExtend(arr, this.BASE_HORIZONTAL_DISTANCE_TO_ROOT);
-    this.drawTree(this.root, null, true);
+    this.moveTreeToMiddle();
+    this.drawTree(this.root, null);
   }
 
   private clearSvgData(): void {
