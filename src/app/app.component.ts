@@ -23,16 +23,20 @@ import { TreeNode } from './models/tree-node.model';
   styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, AfterViewInit {
   readonly document = inject(DOCUMENT);
-  readonly DEFAULT_VALUE = '1,2,3,null,5,6,7';
+  readonly DEFAULT_VALUE = '1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2';
+  readonly BASE_HORIZONTAL_DISTANCE_TO_ROOT = 150;
 
   arrAsString = new FormControl('');
   root: Nullable<TreeNode> = null;
   pathsSvg: WritableSignal<PathSvg[]> = signal([]);
   nodesSvg: WritableSignal<NodeSvg[]> = signal([]);
+  panZoom: any;
+  totalLevels = 0;
 
   @ViewChild('svg') svg!: ElementRef<SVGElement>;
+  @ViewChild('gContainer') gContainer!: ElementRef<SVGGElement>;
 
   ngOnInit(): void {
     this.arrAsString.addValidators((control) => {
@@ -81,6 +85,10 @@ export class AppComponent implements OnInit {
     this.arrAsString.setValue(this.DEFAULT_VALUE);
   }
 
+  ngAfterViewInit(): void {
+    this.panZoom = (window as any).panzoom(this.gContainer.nativeElement, {});
+  }
+
   onCoorChanged({ x, y }: { x: number; y: number }, node: NodeSvg): void {
     const nodeIdx = this.nodesSvg().findIndex(
       (it) => it.x === node.x && it.y === node.y
@@ -110,7 +118,10 @@ export class AppComponent implements OnInit {
     });
   }
 
-  private convertToTree(arr: Nullable<number>[]): TreeNode {
+  private convertToTree(
+    arr: Nullable<number>[],
+    baseDistance = this.BASE_HORIZONTAL_DISTANCE_TO_ROOT
+  ): TreeNode {
     const root: TreeNode = {
       val: arr[0]!,
       left: null,
@@ -123,6 +134,7 @@ export class AppComponent implements OnInit {
     let lastCheckedIdx = 0;
     const arrNodes: TreeNode[] = [];
     let current: TreeNode = root;
+    this.totalLevels = 1;
 
     arr.forEach(() => {
       const leftVal = arr[lastCheckedIdx + 1];
@@ -133,8 +145,8 @@ export class AppComponent implements OnInit {
           val: leftVal,
           left: null,
           right: null,
-          x: current.x - 100 / current.level,
-          y: current.y + 100,
+          x: current.x - baseDistance / current.level,
+          y: current.y + 100 - current.level * 5,
           level: current.level + 1,
         };
 
@@ -147,8 +159,8 @@ export class AppComponent implements OnInit {
           val: rightVal,
           left: null,
           right: null,
-          x: current.x + 100 / current.level,
-          y: current.y + 100,
+          x: current.x + baseDistance / current.level,
+          y: current.y + 100 - current.level * 5,
           level: current.level + 1,
         };
 
@@ -159,30 +171,106 @@ export class AppComponent implements OnInit {
       lastCheckedIdx += 2;
 
       current = arrNodes.shift() as TreeNode;
+      this.totalLevels = current ? current.level : this.totalLevels;
     });
 
     return root;
   }
 
-  private drawTree(node: Nullable<TreeNode>, prev: Nullable<TreeNode>): void {
+  private drawTree(
+    node: Nullable<TreeNode>,
+    prevSvgNode: Nullable<NodeSvg>,
+    isFromLeft: boolean
+  ): void {
     if (!node) {
       return;
     }
 
-    this.nodesSvg.update((v) => [
-      ...v,
-      { val: node.val, x: node.x, y: node.y },
-    ]);
+    const baseDistance = (this.totalLevels - node.level + 1) * 0;
 
-    if (node && prev) {
+    const x = !prevSvgNode
+      ? node.x
+      : node.x - (isFromLeft ? baseDistance : -baseDistance);
+    const y = node.y;
+
+    this.nodesSvg.update((v) => [...v, { val: node.val, x, y }]);
+
+    if (node && prevSvgNode) {
       this.pathsSvg.update((v) => [
         ...v,
-        { x1: node.x, y1: node.y, x2: prev.x, y2: prev.y },
+        { x1: x, y1: y, x2: prevSvgNode.x, y2: prevSvgNode.y },
       ]);
     }
 
-    this.drawTree(node.left, node);
-    this.drawTree(node.right, node);
+    const lastSvgNode = this.nodesSvg()[this.nodesSvg().length - 1];
+    this.drawTree(node.left, lastSvgNode, true);
+    this.drawTree(node.right, lastSvgNode, false);
+  }
+
+  private checkOverlappingAndExtend(arr: Nullable<number>[], baseDistance = this.BASE_HORIZONTAL_DISTANCE_TO_ROOT): void {
+    const queue: TreeNode[] = [this.root!];
+    const bfsNodes: TreeNode[] = [];
+
+    while (queue.length) {
+      const node = queue.shift()!;
+      bfsNodes.push(node);
+      const left = node.left;
+      const right = node.right;
+
+      if (left) {
+        queue.push(left);
+      }
+
+      if (right) {
+        queue.push(right);
+      }
+    }
+
+    let isOverlapped = false;
+    let overlappedLevel = 0;
+
+    for (let i = 0; i < bfsNodes.length - 1; i++) {
+      if (bfsNodes[i].level !== bfsNodes[i + 1].level) {
+        continue;
+      }
+
+      if (bfsNodes[i].x + 20 > bfsNodes[i + 1].x - 20) {
+        isOverlapped = true;
+        overlappedLevel = bfsNodes[i].level;
+        console.log('overlapped', bfsNodes[i].x, bfsNodes[i + 1].x);
+        break;
+      }
+
+      if (i === bfsNodes.length - 2) {
+        isOverlapped = false;
+      }
+    }
+
+    if (isOverlapped) {
+      // this.root = this.convertToTree(arr, baseDistance + 50);
+      this.extendDistanceBetweenNodes(overlappedLevel - 1, 30);
+      // this.checkOverlappingAndExtend(arr, baseDistance + 50);
+    }
+
+    console.log(bfsNodes);
+  }
+
+  private extendDistanceBetweenNodes(toLevel: number, baseDistance: number): void {
+    const dfs = (node: Nullable<TreeNode>, isFromLeft: boolean) => {
+      if (!node || node.level >= toLevel) {
+        return;
+      }
+
+      if (node !== this.root) {
+        console.log(node.val, node.x);
+        node.x = isFromLeft ? node.x - baseDistance : node.x + baseDistance;
+      }
+
+      dfs(node.left, true);
+      dfs(node.right, false);
+    };
+
+    dfs(this.root, true);
   }
 
   private initRootAndDrawTree(arr: Nullable<number>[]): void {
@@ -190,7 +278,8 @@ export class AppComponent implements OnInit {
     if (!this.root) {
       return;
     }
-    this.drawTree(this.root, null);
+    this.checkOverlappingAndExtend(arr, this.BASE_HORIZONTAL_DISTANCE_TO_ROOT);
+    this.drawTree(this.root, null, true);
   }
 
   private clearSvgData(): void {

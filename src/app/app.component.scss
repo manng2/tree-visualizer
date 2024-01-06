@@ -1,8 +1,11 @@
 .container {
   height: 100vh;
 
+  .svg-container {
+    height: 100%;
+  }
+
   .array-input {
-    width: 100%;
     text-align: center;
     padding: 0 16px;
 
@@ -26,9 +29,16 @@
   svg {
     width: 100%;
     height: 100%;
+    cursor: grab;
+    outline: none;
+    overflow: hidden;
+
+    g {
+      width: 100%;
+      height: 100%;
+    }
 
     .node {
-      cursor: pointer;
       fill: #777;
       stroke: #000;
       stroke-width: 1;

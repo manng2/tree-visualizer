@@ -1,10 +1,13 @@
-.node {
-  cursor: pointer;
-  fill: #777;
-  stroke: #000;
-  stroke-width: 1;
+svg {
+  overflow: visible;
 
-  &.selected {
-    stroke: red;
+  .node {
+    fill: #777;
+    stroke: #000;
+    stroke-width: 1;
+
+    &.selected {
+      stroke: red;
+    }
   }
 }

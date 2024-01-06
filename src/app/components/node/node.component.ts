@@ -19,20 +19,20 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NodeComponent {
-  @HostListener('click')
-  onClick(): void {
-    this.isSelected = !this.isSelected;
-  }
+  // @HostListener('click')
+  // onClick(): void {
+  //   this.isSelected = !this.isSelected;
+  // }
 
-  @HostListener('mousemove', ['$event'])
-  onMouseMove(e: MouseEvent): void {
-    if (!this.isSelected) {
-      return;
-    }
-    this.coorX.set(e.offsetX);
-    this.coorY.set(e.offsetY);
-    this.coorChanged.emit({ x: this.coorX(), y: this.coorY() });
-  }
+  // @HostListener('mousemove', ['$event'])
+  // onMouseMove(e: MouseEvent): void {
+  //   if (!this.isSelected) {
+  //     return;
+  //   }
+  //   this.coorX.set(e.offsetX);
+  //   this.coorY.set(e.offsetY);
+  //   this.coorChanged.emit({ x: this.coorX(), y: this.coorY() });
+  // }
 
   isSelected = false;
   coorX = signal(0);
