@@ -25,7 +25,7 @@ import { TreeNode } from './models/tree-node.model';
 })
 export class AppComponent implements OnInit, AfterViewInit {
   readonly document = inject(DOCUMENT);
-  readonly DEFAULT_VALUE = '1,2,3,4,5,6';
+  readonly DEFAULT_VALUE = '1,2,3,null,5,6';
   readonly BASE_HORIZONTAL_DISTANCE_TO_ROOT = 150;
 
   arrAsString = new FormControl('');
@@ -118,9 +118,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private convertToTree(
-    arr: Nullable<number>[],
-  ): TreeNode {
+  private convertToTree(arr: Nullable<number>[]): TreeNode {
     const root: TreeNode = {
       val: arr[0]!,
       left: null,
@@ -139,29 +137,33 @@ export class AppComponent implements OnInit, AfterViewInit {
       const leftVal = arr[lastCheckedIdx + 1];
       const rightVal = arr[lastCheckedIdx + 2];
 
-      const left = {
-        val: leftVal,
-        left: null,
-        right: null,
-        x: 0,
-        y: current.y + 100 - current.level * 5,
-        level: current.level + 1,
-      };
+      if (leftVal) {
+        const left = {
+          val: leftVal,
+          left: null,
+          right: null,
+          x: 0,
+          y: current.y + 100 - current.level * 5,
+          level: current.level + 1,
+        };
 
-      current.left = left;
-      arrNodes.push(left);
+        current.left = left;
+        arrNodes.push(left);
+      }
 
-      const right = {
-        val: rightVal,
-        left: null,
-        right: null,
-        x: 0,
-        y: current.y + 100 - current.level * 5,
-        level: current.level + 1,
-      };
+      if (rightVal) {
+        const right = {
+          val: rightVal,
+          left: null,
+          right: null,
+          x: 0,
+          y: current.y + 100 - current.level * 5,
+          level: current.level + 1,
+        };
 
-      current.right = right;
-      arrNodes.push(right);
+        current.right = right;
+        arrNodes.push(right);
+      }
 
       lastCheckedIdx += 2;
 
@@ -172,14 +174,14 @@ export class AppComponent implements OnInit, AfterViewInit {
     return root;
   }
 
-  private drawTree(
-    node: TreeNode,
-    prevSvgNode: Nullable<NodeSvg>,
-  ): void {
+  private drawTree(node: TreeNode, prevSvgNode: Nullable<NodeSvg>): void {
     if (!node) {
       return;
     }
-    this.nodesSvg.update((v) => [...v, { val: node.val, x: node.x, y: node.y }]);
+    this.nodesSvg.update((v) => [
+      ...v,
+      { val: node.val, x: node.x, y: node.y },
+    ]);
 
     if (node && prevSvgNode && node.val) {
       this.pathsSvg.update((v) => [
@@ -215,7 +217,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
 
     bfsNodes[bfsNodes.length - 1].forEach((it, idx) => {
-      it.x = 100 + idx * 40;
+      it.x = 100 + idx * 25;
     });
 
     const dfs = (node: Nullable<TreeNode>) => {
@@ -228,10 +230,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       if (node.left && node.right) {
         node.x = (node.left.x + node.right.x) / 2;
-      } else if (node.left) {
-        node.x = node.left.x + 40;
-      } else if (node.right) {
-        node.x = node.right.x - 40;
       }
     };
 
@@ -266,7 +264,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
 
     this.createEmptyNodes(node.left);
-    this.createEmptyNodes(node.right)
+    this.createEmptyNodes(node.right);
   }
 
   private moveTreeToMiddle(): void {
@@ -292,6 +290,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
+  private removeEmptyNodesInSvg(): void {
+    this.nodesSvg.update((v) => v.filter((it) => it.val !== null));
+  }
+
   private initRootAndDrawTree(arr: Nullable<number>[]): void {
     this.root = this.convertToTree(arr);
     this.createEmptyNodes(this.root);
@@ -299,6 +301,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       return;
     }
     this.setNodesCoordinates();
+    this.removeEmptyNodesInSvg();
     this.moveTreeToMiddle();
     this.drawTree(this.root, null);
   }
