@@ -66,7 +66,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   constructor() {
     effect(
       () => {
-        console.log(this.isVisualizing());
         if (this.isVisualizing()) {
           this.registerToNodeStatus();
           this.arrAsString.disable();
@@ -195,7 +194,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       const leftVal = arr[lastCheckedIdx + 1];
       const rightVal = arr[lastCheckedIdx + 2];
 
-      if (leftVal) {
+      if (leftVal || leftVal === 0) {
         const left = {
           val: leftVal,
           left: null,
@@ -209,7 +208,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         arrNodes.push(left);
       }
 
-      if (rightVal) {
+      if (rightVal || rightVal === 0) {
         const right = {
           val: rightVal,
           left: null,
@@ -241,7 +240,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       { val: node.val, x: node.x, y: node.y, status: 'unvisited' },
     ]);
 
-    if (node && prevSvgNode && node.val) {
+    if (node && prevSvgNode && (node.val || node.val === 0)) {
       this.pathsSvg.update((v) => [
         ...v,
         { x1: node.x, y1: node.y, x2: prevSvgNode.x, y2: prevSvgNode.y },
@@ -402,8 +401,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
     this._nodeStatusEmitter$.next({ node, status: 'explored' });
     this.traverseInOrder(node.left);
-    this.traverseInOrder(node.right);
     this._nodeStatusEmitter$.next({ node, status: 'visited' });
+    this.traverseInOrder(node.right);
   }
 
   private traversePreOrder(node: Nullable<TreeNode>): void {
@@ -420,9 +419,9 @@ export class AppComponent implements OnInit, AfterViewInit {
     if (!node) {
       return;
     }
+    this._nodeStatusEmitter$.next({ node, status: 'explored' });
     this.traversePostOrder(node.left);
     this.traversePostOrder(node.right);
-    this._nodeStatusEmitter$.next({ node, status: 'explored' });
     this._nodeStatusEmitter$.next({ node, status: 'visited' });
   }
 
@@ -431,7 +430,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       .asObservable()
       .pipe(
         filter(Boolean),
-        concatMap((value) => of(value).pipe(delay(1000))),
+        concatMap((value) => of(value).pipe(delay(500))),
         takeUntilDestroyed(this._destroyRef)
       )
       .subscribe({

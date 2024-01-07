@@ -13,9 +13,7 @@
       </mat-form-field>
       @if (isVisualizing()) {
       <button mat-raised-button (click)="isVisualizing.set(false)">
-        <mat-icon>
-          close
-        </mat-icon>
+        <mat-icon> close </mat-icon>
         Cancel
       </button>
       } @else {
@@ -24,16 +22,15 @@
       </button>
       }
     </div>
-
-    <div class="array-input" [class.error]="arrAsString.invalid">
-      <mat-form-field>
-        <input
-          matInput
-          [formControl]="arrAsString"
-          placeholder="Ex: [1,2,3,null,4]"
-        />
-      </mat-form-field>
-    </div>
+  </div>
+  <div class="array-input" [class.error]="arrAsString.invalid">
+    <mat-form-field>
+      <input
+        matInput
+        [formControl]="arrAsString"
+        placeholder="Ex: [1,2,3,null,4]"
+      />
+    </mat-form-field>
   </div>
 
   <div class="svg-container">
