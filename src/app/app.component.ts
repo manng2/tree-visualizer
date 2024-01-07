@@ -7,27 +7,13 @@ import {
   OnInit,
   ViewChild,
   WritableSignal,
+  effect,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import {
-  BehaviorSubject,
-  Subject,
-  buffer,
-  bufferCount,
-  bufferTime,
-  bufferWhen,
-  concatMap,
-  debounceTime,
-  delay,
-  filter,
-  interval,
-  map,
-  of,
-  take,
-} from 'rxjs';
+import { Subject, concatMap, debounceTime, delay, filter, map, of } from 'rxjs';
 import { NodeSvg } from './models/node.svg.model';
 import { Nullable } from './models/nullable.model';
 import { PathSvg } from './models/path.svg.model';
@@ -41,11 +27,27 @@ import { TreeNode } from './models/tree-node.model';
 })
 export class AppComponent implements OnInit, AfterViewInit {
   readonly document = inject(DOCUMENT);
-  readonly DEFAULT_VALUE = '1,2,3,null,5,6';
+  readonly DEFAULT_VALUE = '1,2,3,4,5,6';
   readonly BASE_HORIZONTAL_DISTANCE_TO_ROOT = 150;
   readonly nodeStatusEmitter$ = new Subject<
     Nullable<{ node: TreeNode; status: 'explored' | 'visited' | 'unvisited' }>
   >();
+  readonly isVisualizing = signal(false);
+  readonly orderOptions = [
+    {
+      label: 'In Order',
+      value: 'in-order',
+    },
+    {
+      label: 'Pre Order',
+      value: 'pre-order',
+    },
+    {
+      label: 'Post Order',
+      value: 'post-order',
+    },
+  ];
+  order = new FormControl(this.orderOptions[0].value);
 
   arrAsString = new FormControl('');
   root!: TreeNode;
@@ -73,6 +75,34 @@ export class AppComponent implements OnInit, AfterViewInit {
           });
         },
       });
+
+    effect(
+      () => {
+        if (this.isVisualizing()) {
+          this.arrAsString.disable();
+
+          switch (this.order.value) {
+            case 'in-order':
+              this.traverseInOrder(this.root);
+              break;
+            case 'pre-order':
+              this.traversePreOrder(this.root);
+              break;
+            case 'post-order':
+              this.traversePostOrder(this.root);
+              break;
+            default:
+              break;
+          }
+        } else {
+          this.arrAsString.enable();
+          this.resetNodeStatus();
+        }
+      },
+      {
+        allowSignalWrites: true,
+      }
+    );
   }
 
   ngOnInit(): void {
@@ -362,8 +392,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.removeEmptyNodes();
     this.moveTreeToMiddle();
     this.drawTree(this.root, null);
-    this.traverseInOrder(this.root);
-    // this.traversePreOrder(this.root);
+  }
+
+  private resetNodeStatus(): void {
+    this.nodesSvg.update((v) => {
+      return v.map((it) => ({ ...it, status: 'unvisited' }));
+    });
   }
 
   private clearSvgData(): void {
@@ -389,5 +423,15 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.nodeStatusEmitter$.next({ node, status: 'visited' });
     this.traversePreOrder(node.left);
     this.traversePreOrder(node.right);
+  }
+
+  private traversePostOrder(node: Nullable<TreeNode>): void {
+    if (!node) {
+      return;
+    }
+    this.traversePostOrder(node.left);
+    this.traversePostOrder(node.right);
+    this.nodeStatusEmitter$.next({ node, status: 'explored' });
+    this.nodeStatusEmitter$.next({ node, status: 'visited' });
   }
 }

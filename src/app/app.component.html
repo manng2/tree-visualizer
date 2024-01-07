@@ -1,6 +1,39 @@
 <div class="container">
-  <div class="array-input" [class.error]="arrAsString.invalid">
-    <input [formControl]="arrAsString" placeholder="Ex: [1,2,3,null,4]" />
+  <div class="header">
+    <div class="order">
+      <mat-form-field>
+        <mat-label> Order </mat-label>
+        <mat-select [formControl]="order">
+          <mat-option
+            *ngFor="let order of orderOptions"
+            [value]="order.value"
+            >{{ order.label }}</mat-option
+          >
+        </mat-select>
+      </mat-form-field>
+      @if (isVisualizing()) {
+      <button mat-raised-button (click)="isVisualizing.set(false)">
+        <mat-icon>
+          close
+        </mat-icon>
+        Cancel
+      </button>
+      } @else {
+      <button mat-raised-button (click)="isVisualizing.set(true)">
+        Visualize
+      </button>
+      }
+    </div>
+
+    <div class="array-input" [class.error]="arrAsString.invalid">
+      <mat-form-field>
+        <input
+          matInput
+          [formControl]="arrAsString"
+          placeholder="Ex: [1,2,3,null,4]"
+        />
+      </mat-form-field>
+    </div>
   </div>
 
   <div class="svg-container">

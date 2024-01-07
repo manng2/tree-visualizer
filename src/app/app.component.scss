@@ -1,5 +1,17 @@
 .container {
   height: 100vh;
+  padding: 24px 16px;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+
+    .order {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
 
   .svg-container {
     height: 100%;
@@ -16,13 +28,8 @@
       }
     }
 
-    input {
+    mat-form-field {
       width: 250px;
-      height: 40px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      padding: 0 10px;
-      font-size: 16px;
     }
   }
 
@@ -43,5 +50,11 @@
       stroke: #000;
       stroke-width: 1;
     }
+  }
+}
+
+::ng-deep mat-form-field {
+  .mat-mdc-form-field-bottom-align {
+    display: none !important;
   }
 }
