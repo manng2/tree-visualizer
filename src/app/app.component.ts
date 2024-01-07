@@ -3,6 +3,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   OnInit,
   ViewChild,
@@ -13,7 +14,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
-import { Subject, concatMap, debounceTime, delay, filter, map, of } from 'rxjs';
+import { Subject, Subscription, concatMap, debounceTime, delay, filter, map, of, takeUntil } from 'rxjs';
 import { NodeSvg } from './models/node.svg.model';
 import { Nullable } from './models/nullable.model';
 import { PathSvg } from './models/path.svg.model';
@@ -26,12 +27,15 @@ import { TreeNode } from './models/tree-node.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit {
+  private readonly _nodeStatusEmitter$ = new Subject<
+    Nullable<{ node: TreeNode; status: 'explored' | 'visited' | 'unvisited' }>
+  >();
+  private readonly _destroyRef = inject(DestroyRef);
+  private _nodeStatusListener$?: Subscription;
+
   readonly document = inject(DOCUMENT);
   readonly DEFAULT_VALUE = '1,2,3,4,5,6';
   readonly BASE_HORIZONTAL_DISTANCE_TO_ROOT = 150;
-  readonly nodeStatusEmitter$ = new Subject<
-    Nullable<{ node: TreeNode; status: 'explored' | 'visited' | 'unvisited' }>
-  >();
   readonly isVisualizing = signal(false);
   readonly orderOptions = [
     {
@@ -60,25 +64,11 @@ export class AppComponent implements OnInit, AfterViewInit {
   @ViewChild('gContainer') gContainer!: ElementRef<SVGGElement>;
 
   constructor() {
-    this.nodeStatusEmitter$
-      .pipe(
-        filter(Boolean),
-        concatMap((value) => of(value).pipe(delay(1000))),
-        takeUntilDestroyed()
-      )
-      .subscribe({
-        next: ({ node, status }) => {
-          this.nodesSvg.update((v) => {
-            const nodeIdx = v.findIndex((it) => it.val === node.val);
-            v[nodeIdx] = { ...v[nodeIdx], status };
-            return [...v];
-          });
-        },
-      });
-
     effect(
       () => {
+        console.log(this.isVisualizing());
         if (this.isVisualizing()) {
+          this.registerToNodeStatus();
           this.arrAsString.disable();
 
           switch (this.order.value) {
@@ -95,6 +85,7 @@ export class AppComponent implements OnInit, AfterViewInit {
               break;
           }
         } else {
+          this.unregisterToNodeStatus();
           this.arrAsString.enable();
           this.resetNodeStatus();
         }
@@ -409,18 +400,18 @@ export class AppComponent implements OnInit, AfterViewInit {
     if (!node) {
       return;
     }
-    this.nodeStatusEmitter$.next({ node, status: 'explored' });
+    this._nodeStatusEmitter$.next({ node, status: 'explored' });
     this.traverseInOrder(node.left);
     this.traverseInOrder(node.right);
-    this.nodeStatusEmitter$.next({ node, status: 'visited' });
+    this._nodeStatusEmitter$.next({ node, status: 'visited' });
   }
 
   private traversePreOrder(node: Nullable<TreeNode>): void {
     if (!node) {
       return;
     }
-    this.nodeStatusEmitter$.next({ node, status: 'explored' });
-    this.nodeStatusEmitter$.next({ node, status: 'visited' });
+    this._nodeStatusEmitter$.next({ node, status: 'explored' });
+    this._nodeStatusEmitter$.next({ node, status: 'visited' });
     this.traversePreOrder(node.left);
     this.traversePreOrder(node.right);
   }
@@ -431,7 +422,30 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
     this.traversePostOrder(node.left);
     this.traversePostOrder(node.right);
-    this.nodeStatusEmitter$.next({ node, status: 'explored' });
-    this.nodeStatusEmitter$.next({ node, status: 'visited' });
+    this._nodeStatusEmitter$.next({ node, status: 'explored' });
+    this._nodeStatusEmitter$.next({ node, status: 'visited' });
+  }
+
+  private registerToNodeStatus(): void {
+    this._nodeStatusListener$ = this._nodeStatusEmitter$
+      .asObservable()
+      .pipe(
+        filter(Boolean),
+        concatMap((value) => of(value).pipe(delay(1000))),
+        takeUntilDestroyed(this._destroyRef)
+      )
+      .subscribe({
+        next: ({ node, status }) => {
+          this.nodesSvg.update((v) => {
+            const nodeIdx = v.findIndex((it) => it.val === node.val);
+            v[nodeIdx] = { ...v[nodeIdx], status };
+            return [...v];
+          });
+        },
+      });
+  }
+
+  private unregisterToNodeStatus(): void {
+    this._nodeStatusListener$?.unsubscribe();
   }
 }
