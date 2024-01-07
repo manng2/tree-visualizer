@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
+  HostBinding,
   HostListener,
   Input,
   Output,
@@ -20,7 +21,13 @@ import { Nullable } from 'src/app/models/nullable.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NodeComponent {
-  isSelected = false;
+  @HostBinding('class.explored') get explored() {
+    return this.status === 'explored';
+  }
+  @HostBinding('class.visited') get visited() {
+    return this.status === 'visited';
+  }
+
   coorX = signal(0);
   coorY = signal(0);
   translateXY = computed(() => {
@@ -34,6 +41,7 @@ export class NodeComponent {
   @Input({ required: true }) set y(value: number) {
     this.coorY.set(value);
   }
+  @Input() status: 'explored' | 'visited' | 'unvisited' = 'unvisited';
 
   @Output() coorChanged = new EventEmitter<{ x: number; y: number }>();
 }

@@ -1,3 +1,11 @@
+:host-context(.explored) svg .node {
+  stroke: blue;
+}
+
+:host-context(.visited) svg .node {
+  stroke: green;
+}
+
 svg {
   overflow: visible;
 

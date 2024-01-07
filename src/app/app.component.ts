@@ -11,7 +11,23 @@ import {
   signal,
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { debounceTime, filter, map } from 'rxjs';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import {
+  BehaviorSubject,
+  Subject,
+  buffer,
+  bufferCount,
+  bufferTime,
+  bufferWhen,
+  concatMap,
+  debounceTime,
+  delay,
+  filter,
+  interval,
+  map,
+  of,
+  take,
+} from 'rxjs';
 import { NodeSvg } from './models/node.svg.model';
 import { Nullable } from './models/nullable.model';
 import { PathSvg } from './models/path.svg.model';
@@ -27,6 +43,9 @@ export class AppComponent implements OnInit, AfterViewInit {
   readonly document = inject(DOCUMENT);
   readonly DEFAULT_VALUE = '1,2,3,null,5,6';
   readonly BASE_HORIZONTAL_DISTANCE_TO_ROOT = 150;
+  readonly nodeStatusEmitter$ = new Subject<
+    Nullable<{ node: TreeNode; status: 'explored' | 'visited' | 'unvisited' }>
+  >();
 
   arrAsString = new FormControl('');
   root!: TreeNode;
@@ -37,6 +56,24 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   @ViewChild('svg') svg!: ElementRef<SVGElement>;
   @ViewChild('gContainer') gContainer!: ElementRef<SVGGElement>;
+
+  constructor() {
+    this.nodeStatusEmitter$
+      .pipe(
+        filter(Boolean),
+        concatMap((value) => of(value).pipe(delay(1000))),
+        takeUntilDestroyed()
+      )
+      .subscribe({
+        next: ({ node, status }) => {
+          this.nodesSvg.update((v) => {
+            const nodeIdx = v.findIndex((it) => it.val === node.val);
+            v[nodeIdx] = { ...v[nodeIdx], status };
+            return [...v];
+          });
+        },
+      });
+  }
 
   ngOnInit(): void {
     this.arrAsString.addValidators((control) => {
@@ -180,7 +217,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
     this.nodesSvg.update((v) => [
       ...v,
-      { val: node.val, x: node.x, y: node.y },
+      { val: node.val, x: node.x, y: node.y, status: 'unvisited' },
     ]);
 
     if (node && prevSvgNode && node.val) {
@@ -290,7 +327,28 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
-  private removeEmptyNodesInSvg(): void {
+  private removeEmptyNodes(): void {
+    const queue: Nullable<TreeNode>[] = [this.root!];
+
+    while (queue.length) {
+      const node = queue.shift()!;
+      if (!node) {
+        continue;
+      }
+      const left = node.left;
+      const right = node.right;
+
+      if (left && left.val === null) {
+        node.left = null;
+      }
+
+      if (right && right.val === null) {
+        node.right = null;
+      }
+
+      queue.push(left);
+      queue.push(right);
+    }
     this.nodesSvg.update((v) => v.filter((it) => it.val !== null));
   }
 
@@ -301,13 +359,35 @@ export class AppComponent implements OnInit, AfterViewInit {
       return;
     }
     this.setNodesCoordinates();
-    this.removeEmptyNodesInSvg();
+    this.removeEmptyNodes();
     this.moveTreeToMiddle();
     this.drawTree(this.root, null);
+    this.traverseInOrder(this.root);
+    // this.traversePreOrder(this.root);
   }
 
   private clearSvgData(): void {
     this.pathsSvg.set([]);
     this.nodesSvg.set([]);
+  }
+
+  private traverseInOrder(node: Nullable<TreeNode>): void {
+    if (!node) {
+      return;
+    }
+    this.nodeStatusEmitter$.next({ node, status: 'explored' });
+    this.traverseInOrder(node.left);
+    this.traverseInOrder(node.right);
+    this.nodeStatusEmitter$.next({ node, status: 'visited' });
+  }
+
+  private traversePreOrder(node: Nullable<TreeNode>): void {
+    if (!node) {
+      return;
+    }
+    this.nodeStatusEmitter$.next({ node, status: 'explored' });
+    this.nodeStatusEmitter$.next({ node, status: 'visited' });
+    this.traversePreOrder(node.left);
+    this.traversePreOrder(node.right);
   }
 }
