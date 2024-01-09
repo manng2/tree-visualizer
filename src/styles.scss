@@ -1,3 +1,100 @@
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+@use "@angular/material" as mat;
+// Plus imports for other components in your app.
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+@include mat.core();
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap");
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+
+$primary: #00599d;
+$secondary: #29aae2;
+
+:root {
+  --color-primary: #00599d;
+  --custom-color-grey: #dbd8e3;
+  --color-success: #34bfa3;
+  --color-danger: #f4516c;
+  --color-warning: #ffc107;
+  --color-info: #29aae2;
+}
+
+// TODO: Config bootstrap color to make sure text-primary can use same primary color
+
+$people-palette: (
+  50: #e1f5fe,
+  100: #b3e6fc,
+  200: #82d5fb,
+  300: #50c5f8,
+  400: #2ab8f8,
+  500: #03abf6,
+  600: #039de7,
+  700: #018ad3,
+  800: #0179bf,
+  900: #00599d,
+  A100: #29aae2,
+  A200: #29aae2,
+  A400: #29aae2,
+  A700: #29aae2,
+  contrast: (
+    50: #000000,
+    100: #000000,
+    200: #000000,
+    300: #ffffff,
+    400: #ffffff,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+    A100: #000000,
+    A200: #ffffff,
+    A400: #ffffff,
+    A700: #ffffff,
+  ),
+);
+
+$people-primary: mat.define-palette($people-palette, 900);
+$people-accent: mat.define-palette(
+  $people-palette,
+  A100,
+);
+
+// The warn palette is optional (defaults to red).
+$people-warn: mat.define-palette(mat.$red-palette);
+
+$my-typography: mat.define-typography-config(
+  $font-family: '"Satoshi", sans-serif',
+  $button: mat.define-typography-level(0.8rem, 500, $letter-spacing: normal),
+  $body-1: mat.define-typography-level(1rem, $letter-spacing: normal),
+);
+
+// Create the theme object. A theme consists of configurations for individual
+// theming systems such as "color" or "typography".
+$people-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $people-primary,
+      accent: $people-accent,
+      warn: $people-warn,
+    ),
+    typography: $my-typography,
+  )
+);
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+@include mat.all-component-themes($people-theme);
+
+
 /* You can add global styles to this file, and also import other style files */
 body {
     background-color: rgba(233,232,249,.64);

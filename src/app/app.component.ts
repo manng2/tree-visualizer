@@ -436,7 +436,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       .subscribe({
         next: ({ node, status }) => {
           this.nodesSvg.update((v) => {
-            const nodeIdx = v.findIndex((it) => it.val === node.val);
+            const nodeIdx = v.findIndex((it) => it.x === node.x && it.y === node.y);
             v[nodeIdx] = { ...v[nodeIdx], status };
             return [...v];
           });
