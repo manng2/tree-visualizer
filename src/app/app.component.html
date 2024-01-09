@@ -3,7 +3,7 @@
     <div class="order">
       <mat-form-field>
         <mat-label> Order </mat-label>
-        <mat-select [formControl]="order">
+        <mat-select [formControl]="orderFormControl">
           <mat-option
             *ngFor="let order of orderOptions"
             [value]="order.value"
@@ -23,11 +23,11 @@
       }
     </div>
   </div>
-  <div class="array-input" [class.error]="arrAsString.invalid">
+  <div class="array-input" [class.error]="arrAsStringFormControl.invalid">
     <mat-form-field>
       <input
         matInput
-        [formControl]="arrAsString"
+        [formControl]="arrAsStringFormControl"
         placeholder="Ex: [1,2,3,null,4]"
       />
     </mat-form-field>
@@ -45,7 +45,6 @@
           [x]="node.x"
           [y]="node.y"
           [status]="node.status"
-          (coorChanged)="onCoorChanged($event, node)"
         ></g>
         }
       </g>

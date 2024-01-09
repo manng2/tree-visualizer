@@ -19,6 +19,9 @@ import { NodeSvg } from './models/node.svg.model';
 import { Nullable } from './models/nullable.model';
 import { PathSvg } from './models/path.svg.model';
 import { TreeNode } from './models/tree-node.model';
+import { createEmptyNodes } from './utils/create-empty-nodes.util';
+import { setNodesCoordinates } from './utils/set-node-coordinates.util';
+import { removeEmptyNodes } from './utils/remove-empty-nodes.util';
 
 @Component({
   selector: 'app-root',
@@ -51,10 +54,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       value: 'post-order',
     },
   ];
-  order = new FormControl(this.orderOptions[0].value);
+  readonly orderFormControl = new FormControl(this.orderOptions[0].value);
+  readonly arrAsStringFormControl = new FormControl('');
 
-  arrAsString = new FormControl('');
-  root!: TreeNode;
+  root?: TreeNode;
   pathsSvg: WritableSignal<PathSvg[]> = signal([]);
   nodesSvg: WritableSignal<NodeSvg[]> = signal([]);
   panZoom: any;
@@ -68,24 +71,24 @@ export class AppComponent implements OnInit, AfterViewInit {
       () => {
         if (this.isVisualizing()) {
           this.registerToNodeStatus();
-          this.arrAsString.disable();
+          this.arrAsStringFormControl.disable();
 
-          switch (this.order.value) {
+          switch (this.orderFormControl.value) {
             case 'in-order':
-              this.traverseInOrder(this.root);
+              this.traverseInOrder(this.root!);
               break;
             case 'pre-order':
-              this.traversePreOrder(this.root);
+              this.traversePreOrder(this.root!);
               break;
             case 'post-order':
-              this.traversePostOrder(this.root);
+              this.traversePostOrder(this.root!);
               break;
             default:
               break;
           }
         } else {
           this.unregisterToNodeStatus();
-          this.arrAsString.enable();
+          this.arrAsStringFormControl.enable();
           this.resetNodeStatus();
         }
       },
@@ -96,7 +99,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.arrAsString.addValidators((control) => {
+    this.arrAsStringFormControl.addValidators((control) => {
       try {
         let value = control.value;
         if (value[0] !== '[' && value[value.length - 1] !== ']') {
@@ -110,10 +113,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
     });
 
-    this.arrAsString.valueChanges
+    this.arrAsStringFormControl.valueChanges
       .pipe(
         debounceTime(400),
-        filter(() => this.arrAsString.valid),
+        filter(() => this.arrAsStringFormControl.valid),
         map((it) => {
           if (!it) {
             return '[]';
@@ -139,40 +142,11 @@ export class AppComponent implements OnInit, AfterViewInit {
         },
       });
 
-    this.arrAsString.setValue(this.DEFAULT_VALUE);
+    this.arrAsStringFormControl.setValue(this.DEFAULT_VALUE);
   }
 
   ngAfterViewInit(): void {
     this.panZoom = (window as any).panzoom(this.gContainer.nativeElement, {});
-  }
-
-  onCoorChanged({ x, y }: { x: number; y: number }, node: NodeSvg): void {
-    const nodeIdx = this.nodesSvg().findIndex(
-      (it) => it.x === node.x && it.y === node.y
-    );
-
-    this.nodesSvg.update((v) => {
-      v[nodeIdx] = { ...v[nodeIdx], x, y };
-      return v;
-    });
-
-    this.pathsSvg().forEach((path, idx) => {
-      if (path.x1 === node.x && path.y1 === node.y) {
-        this.pathsSvg.update((v) => {
-          v[idx] = { ...v[idx], x1: x, y1: y };
-          return v;
-        });
-      }
-    });
-
-    this.pathsSvg().forEach((path, idx) => {
-      if (path.x2 === node.x && path.y2 === node.y) {
-        this.pathsSvg.update((v) => {
-          v[idx] = { ...v[idx], x2: x, y2: y };
-          return v;
-        });
-      }
-    });
   }
 
   private convertToTree(arr: Nullable<number>[]): TreeNode {
@@ -252,78 +226,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.drawTree(node.right!, lastSvgNode);
   }
 
-  private setNodesCoordinates(): void {
-    const queue: Nullable<TreeNode>[] = [this.root!];
-    const bfsNodes: TreeNode[][] = [];
-
-    while (queue.length) {
-      const node = queue.shift()!;
-      if (!node) {
-        continue;
-      }
-      const left = node.left;
-      const right = node.right;
-
-      if (bfsNodes[node.level]) {
-        bfsNodes[node.level].push(node);
-      } else {
-        bfsNodes[node.level] = [node];
-      }
-      queue.push(left);
-      queue.push(right);
-    }
-
-    bfsNodes[bfsNodes.length - 1].forEach((it, idx) => {
-      it.x = 100 + idx * 25;
-    });
-
-    const dfs = (node: Nullable<TreeNode>) => {
-      if (!node) {
-        return;
-      }
-
-      dfs(node.left);
-      dfs(node.right);
-
-      if (node.left && node.right) {
-        node.x = (node.left.x + node.right.x) / 2;
-      }
-    };
-
-    dfs(this.root);
-  }
-
-  private createEmptyNodes(node: TreeNode): void {
-    if (node.level > this.totalLevels) {
-      return;
-    }
-
-    if (!node.left) {
-      node.left = {
-        val: null,
-        left: null,
-        right: null,
-        x: 0,
-        y: 0,
-        level: node.level + 1,
-      };
-    }
-
-    if (!node.right) {
-      node.right = {
-        val: null,
-        left: null,
-        right: null,
-        x: 0,
-        y: 0,
-        level: node.level + 1,
-      };
-    }
-
-    this.createEmptyNodes(node.left);
-    this.createEmptyNodes(node.right);
-  }
-
   private moveTreeToMiddle(): void {
     const root = this.root;
     if (!root) {
@@ -347,39 +249,18 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
-  private removeEmptyNodes(): void {
-    const queue: Nullable<TreeNode>[] = [this.root!];
-
-    while (queue.length) {
-      const node = queue.shift()!;
-      if (!node) {
-        continue;
-      }
-      const left = node.left;
-      const right = node.right;
-
-      if (left && left.val === null) {
-        node.left = null;
-      }
-
-      if (right && right.val === null) {
-        node.right = null;
-      }
-
-      queue.push(left);
-      queue.push(right);
-    }
-    this.nodesSvg.update((v) => v.filter((it) => it.val !== null));
-  }
-
   private initRootAndDrawTree(arr: Nullable<number>[]): void {
     this.root = this.convertToTree(arr);
-    this.createEmptyNodes(this.root);
     if (!this.root) {
       return;
     }
-    this.setNodesCoordinates();
-    this.removeEmptyNodes();
+    createEmptyNodes(this.root, this.totalLevels);
+    setNodesCoordinates(this.root!);
+
+    // Remove empty nodes and update nodesSvg
+    removeEmptyNodes(this.root!);
+    this.nodesSvg.update((v) => v.filter((it) => it.val !== null));
+
     this.moveTreeToMiddle();
     this.drawTree(this.root, null);
   }

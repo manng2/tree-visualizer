@@ -28,7 +28,7 @@ $secondary: #29aae2;
 
 // TODO: Config bootstrap color to make sure text-primary can use same primary color
 
-$people-palette: (
+$app-palette: (
   50: #e1f5fe,
   100: #b3e6fc,
   200: #82d5fb,
@@ -61,14 +61,14 @@ $people-palette: (
   ),
 );
 
-$people-primary: mat.define-palette($people-palette, 900);
-$people-accent: mat.define-palette(
-  $people-palette,
+$app-primary: mat.define-palette($app-palette, 900);
+$app-accent: mat.define-palette(
+  $app-palette,
   A100,
 );
 
 // The warn palette is optional (defaults to red).
-$people-warn: mat.define-palette(mat.$red-palette);
+$app-warn: mat.define-palette(mat.$red-palette);
 
 $my-typography: mat.define-typography-config(
   $font-family: '"Satoshi", sans-serif',
@@ -78,12 +78,12 @@ $my-typography: mat.define-typography-config(
 
 // Create the theme object. A theme consists of configurations for individual
 // theming systems such as "color" or "typography".
-$people-theme: mat.define-light-theme(
+$app-theme: mat.define-light-theme(
   (
     color: (
-      primary: $people-primary,
-      accent: $people-accent,
-      warn: $people-warn,
+      primary: $app-primary,
+      accent: $app-accent,
+      warn: $app-warn,
     ),
     typography: $my-typography,
   )
@@ -92,7 +92,7 @@ $people-theme: mat.define-light-theme(
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
-@include mat.all-component-themes($people-theme);
+@include mat.all-component-themes($app-theme);
 
 
 /* You can add global styles to this file, and also import other style files */
